@@ -65,7 +65,7 @@ func drawCircle(dc *gg.Context, x1, x2 float64, n int, sx, sy float64) {
 	pos2 := pickPointOnCircleWithX(x2)
 
 	dc.MoveTo(pos1.x, pos1.y)
-	dc.SetLineWidth(1)
+	dc.SetLineWidth(0.5)
 	fmt.Println(pos1)
 	for i := 0; i < n; i++ {
 		fmt.Println(pos1, pos2)
@@ -87,10 +87,11 @@ func main() {
 	dc.Clear()
 	dc.SetRGB(0, 0, 0)
 	dc.Translate(500, 500)
+	dc.SetLineWidth(0.1)
 
 	for i := 0; i < 12; i++ {
-		drawCircle(dc, 0, 499.9-.05*float64(i), 44, 1-.0001*float64(i), 1-.0001*float64(i))
-		dc.Scale(0.65, 0.65)
+		drawCircle(dc, 0, 499.95-.5*float64(i), 100, 1-.0001*float64(i), 1-.0001*float64(i))
+		dc.Scale(0.72, 0.72)
 		dc.Rotate(gg.Radians(22.5))
 	}
 
