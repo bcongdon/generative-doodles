@@ -20,7 +20,7 @@ func mapPoint(x1, x2, y1, y2, xt float64) float64 {
 func drawCircleRing(dc *gg.Context, r, n float64) float64 {
 	da := 2 * math.Pi / n
 	individR := r * math.Sin(da/2)
-	offset := n / 85
+	offset := n / 2
 	for a := 0.0; a < 2*math.Pi; a += da {
 		x := r * math.Cos(a+offset)
 		y := r * math.Sin(a+offset)
@@ -46,9 +46,9 @@ func main() {
 	dc.SetLineWidth(1)
 	dc.Translate(width/2, height/2)
 
-	r := 1.
-	for i := 3.; i < 50; i++ {
-		r += 2.002 * drawCircleRing(dc, r, 2*i)
+	r := 17.
+	for i := 5.; i < 50; i++ {
+		r += 2.1 * drawCircleRing(dc, r, 2*i)
 	}
 
 	dc.Stroke()
