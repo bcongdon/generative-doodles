@@ -16,13 +16,15 @@ const circleRadius = 500.0
 var namer = fn.New()
 
 type Agent struct {
-	x             float64
-	y             float64
-	a             float64
-	targetA       float64
-	reactivity    int
-	reactionTimer int
-	positions     []gg.Point
+	x               float64
+	y               float64
+	a               float64
+	targetA         float64
+	reactivity      int
+	reactionTimer   int
+	target          *Agent
+	positions       []gg.Point
+	targetPositions []gg.Point
 }
 
 func (a Agent) DistSq(other *Agent) float64 {
@@ -46,6 +48,10 @@ func (a *Agent) Move() {
 	a.positions = append(a.positions, gg.Point{X: a.x, Y: a.y})
 }
 
+func (a *Agent) UpdateTargetPosition() {
+	a.targetPositions = append(a.targetPositions, gg.Point{X: a.target.x, Y: a.target.y})
+}
+
 func simulateOoda(agents []*Agent, iterations int) [][]gg.Point {
 	for iter := 0; iter < iterations; iter++ {
 		for i, agent := range agents {
@@ -60,9 +66,13 @@ func simulateOoda(agents []*Agent, iterations int) [][]gg.Point {
 						closestIdx = j
 					}
 				}
+				agent.target = agents[closestIdx]
 				agent.targetA = agent.AngleTo(agents[closestIdx])
 			}
 			agent.Move()
+		}
+		for _, agent := range agents {
+			agent.UpdateTargetPosition()
 		}
 	}
 
@@ -80,7 +90,7 @@ func NewAgent(x, y float64, reactivity int) *Agent {
 		y:          y,
 		a:          rand.Float64() * math.Pi * 2,
 		reactivity: reactivity,
-		positions:  []gg.Point{gg.Point{X: x, Y: y}},
+		positions:  []gg.Point{},
 	}
 }
 
@@ -101,11 +111,11 @@ func main() {
 	// dc.Translate(width/2, height/2)
 
 	agents := []*Agent{}
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		agents = append(agents, NewAgent(r1.Float64()*100, r1.Float64()*100, 10+int(r1.Float64()*10)))
 	}
 
-	paths := simulateOoda(agents, 150)
+	paths := simulateOoda(agents, 100)
 	minX, maxX := math.MaxFloat64, -math.MaxFloat64
 	minY, maxY := math.MaxFloat64, -math.MaxFloat64
 	for _, path := range paths {
@@ -118,10 +128,10 @@ func main() {
 	}
 
 	for agentIdx, agentPath := range paths {
-		cVal := 0.5 + 0.7*float64(agentIdx)/float64(len(paths))
-		dc.SetRGB(cVal, cVal, cVal)
-		dc.SetLineWidth(2 + float64(agentIdx)/float64(len(paths)))
+		cVal := 1 - mapPoint(0, float64(len(paths)), 0.3, 0.9, float64(agentIdx))
 		for idx, point := range agentPath {
+			dc.SetRGB(cVal, cVal, cVal)
+			dc.SetLineWidth(2 + float64(agentIdx)/float64(len(paths)))
 			screenX := mapPoint(minX, maxX, 0, width, point.X)
 			screenY := mapPoint(minY, maxY, 0, height, point.Y)
 			if idx == 0 {
@@ -131,7 +141,18 @@ func main() {
 
 			} else {
 				dc.LineTo(screenX, screenY)
+				dc.Stroke()
 			}
+			dc.Push()
+			targetPoint := agents[agentIdx].targetPositions[idx]
+			tSX := mapPoint(minX, maxX, 0, width, targetPoint.X)
+			tSY := mapPoint(minY, maxY, 0, height, targetPoint.Y)
+			dc.SetLineWidth(0.5)
+			dc.SetRGB(cVal*0.9, cVal*0.9, cVal*0.9)
+			dc.DrawLine(screenX, screenY, tSX, tSY)
+			dc.Stroke()
+			dc.Pop()
+			dc.MoveTo(screenX, screenY)
 			// dc.DrawPoint(screenX, screenY, 1)
 		}
 		dc.Stroke()
