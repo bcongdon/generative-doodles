@@ -6,18 +6,27 @@ import (
 	"github.com/dhconnelly/rtreego"
 )
 
+type InjectionMode int
+
+const (
+	RandomInjection InjectionMode = iota
+	CurvatureInjection
+)
+
 const minAttractionDistance = 10.0
-const attractionForce = 0.2
-const repulsionForce = 0.2
-const repulsionRadius = 100
-const alignmentForce = 0.1
-const maxEdgeDistance = 100
+const attractionForce = 0.001
+const repulsionForce = 500
+const repulsionRadius = 20.0
+const alignmentForce = 0.001
+const maxEdgeDistance = 20.0
+const minEdgeDistance = 30.0
 
 type Path struct {
 	Nodes                    []*Node
 	UseBrownianMotion        bool
 	IsClosed                 bool
 	NodeInjectionInterval    int
+	NodeInjectionMode        InjectionMode
 	iterationsSinceInjection int
 }
 
@@ -95,16 +104,45 @@ func (p *Path) splitEdges() {
 		}
 		newNodes = append(newNodes, node)
 	}
+	p.Nodes = newNodes
 }
 
-// TODO
 func (p *Path) pruneNodes() {
-
+	newNodes := make([]*Node, 0, len(p.Nodes))
+	for _, node := range p.Nodes {
+		prevNode, _ := p.connectedNodes(node)
+		if node.IsFixed || prevNode == nil || node.Dist(prevNode) >= minEdgeDistance {
+			newNodes = append(newNodes, node)
+		}
+	}
+	p.Nodes = newNodes
 }
 
-// TODO
 func (p *Path) injectNode() {
+	switch p.NodeInjectionMode {
+	case RandomInjection:
+		p.injectRandomNode()
+	case CurvatureInjection:
+		p.injectByCurvature()
+	default:
+		panic("Unknown injection mode!")
+	}
+}
 
+func (p *Path) injectRandomNode() {
+	index := 1 + rand.Intn(len(p.Nodes)-1)
+	injectionNode := p.Nodes[index]
+	prevNode, nextNode := p.connectedNodes(injectionNode)
+
+	if prevNode != nil && nextNode != nil && injectionNode.Dist(prevNode) > minEdgeDistance {
+		midpointX, midpointY := injectionNode.MidpointTo(prevNode)
+		midpointNode := NewNode(midpointX, midpointY)
+		p.Nodes = append(p.Nodes[:index], append([]*Node{midpointNode}, p.Nodes[index:]...)...)
+	}
+}
+
+func (p *Path) injectByCurvature() {
+	panic("Unimplemented injection mode")
 }
 
 func (p *Path) connectedNodes(node *Node) (prevNode, nextNode *Node) {

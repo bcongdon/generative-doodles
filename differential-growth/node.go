@@ -15,6 +15,8 @@ type Node struct {
 	IsFixed bool
 }
 
+const maxVelocity = 0.1
+
 func NewNode(x, y float64) *Node {
 	return &Node{
 		X:       x,
@@ -28,8 +30,8 @@ func (n *Node) Iterate() {
 		return
 	}
 
-	n.X = Lerp(n.X, n.nextX, 0.5)
-	n.Y = Lerp(n.Y, n.nextY, 0.5)
+	n.X = Lerp(n.X, n.nextX, maxVelocity)
+	n.Y = Lerp(n.Y, n.nextY, maxVelocity)
 }
 
 func (n *Node) Draw(dc *gg.Context) {
