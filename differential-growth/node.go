@@ -15,6 +15,14 @@ type Node struct {
 	IsFixed bool
 }
 
+func NewNode(x, y float64) *Node {
+	return &Node{
+		X:       x,
+		Y:       y,
+		IsFixed: false,
+	}
+}
+
 func (n *Node) Iterate() {
 	if n.IsFixed {
 		return
@@ -32,6 +40,12 @@ func (n *Node) Dist(other *Node) float64 {
 	dx := n.X - other.X
 	dy := n.Y - other.Y
 	return math.Sqrt(dx*dx + dy*dy)
+}
+
+func (n *Node) MidpointTo(other *Node) (x, y float64) {
+	x = (n.X + other.X) / 2
+	y = (n.Y + other.Y) / 2
+	return
 }
 
 func (n *Node) Bounds() *rtreego.Rect {

@@ -16,10 +16,12 @@ func NewWorld() *World {
 }
 
 func (w *World) buildTree() {
-	nodes := []rtreego.Spatial{}
+	nodes := make([]rtreego.Spatial, 0, 1000)
 
 	for _, path := range w.paths {
-		nodes = append(nodes, path.Nodes[0])
+		for _, node := range path.Nodes {
+			nodes = append(nodes, node)
+		}
 	}
 
 	w.tree = rtreego.NewTree(2, 25, 50, nodes...)
