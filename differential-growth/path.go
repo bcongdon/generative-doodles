@@ -30,6 +30,12 @@ type Path struct {
 	iterationsSinceInjection int
 }
 
+func NewPath(nodes []*Node) *Path {
+	return &Path{
+		Nodes: nodes,
+	}
+}
+
 func (p *Path) Iterate(tree *rtreego.Rtree) {
 	for _, node := range p.Nodes {
 		if p.UseBrownianMotion {
@@ -163,7 +169,7 @@ func (p *Path) connectedNodes(node *Node) (prevNode, nextNode *Node) {
 
 	if nodeIdx == 0 && p.IsClosed {
 		prevNode = p.Nodes[len(p.Nodes)-1]
-	} else if nodeIdx >= 0 {
+	} else if nodeIdx > 0 {
 		prevNode = p.Nodes[nodeIdx-1]
 	}
 

@@ -21,6 +21,8 @@ func NewNode(x, y float64) *Node {
 	return &Node{
 		X:       x,
 		Y:       y,
+		nextX:   x,
+		nextY:   y,
 		IsFixed: false,
 	}
 }

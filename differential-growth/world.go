@@ -1,6 +1,9 @@
 package main
 
-import "github.com/dhconnelly/rtreego"
+import (
+	"github.com/dhconnelly/rtreego"
+	"github.com/fogleman/gg"
+)
 
 type World struct {
 	tree  *rtreego.Rtree
@@ -25,4 +28,18 @@ func (w *World) buildTree() {
 	}
 
 	w.tree = rtreego.NewTree(2, 25, 50, nodes...)
+}
+
+func (w *World) Iterate() {
+	for _, path := range w.paths {
+		path.Iterate(w.tree)
+	}
+}
+
+func (w *World) Draw(dc *gg.Context) {
+	for _, path := range w.paths {
+		for _, node := range path.Nodes {
+			node.Draw(dc)
+		}
+	}
 }
