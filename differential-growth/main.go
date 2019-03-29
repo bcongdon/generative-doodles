@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bcongdon/fn"
 	"github.com/fogleman/gg"
 )
@@ -12,14 +14,17 @@ func main() {
 
 	nodes := make([]*Node, 10)
 	for i := 0; i < 10; i++ {
-		nodes[i] = NewNode(500, float64(i)*25+500)
+		nodes[i] = NewNode(500, float64(i)*30+500)
 	}
 	path := NewPath(nodes)
 	path.UseBrownianMotion = true
+	path.NodeInjectionInterval = 10
 
 	world.paths = append(world.paths, path)
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 700; i++ {
+		fmt.Println(i)
+
 		world.Iterate()
 	}
 

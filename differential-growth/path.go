@@ -15,11 +15,11 @@ const (
 
 const minAttractionDistance = 10.0
 const attractionForce = 0.001
-const repulsionForce = 500
+const repulsionForce = 0.8
 const repulsionRadius = 20.0
 const alignmentForce = 0.001
-const maxEdgeDistance = 20.0
-const minEdgeDistance = 30.0
+const maxEdgeDistance = 30.0
+const minEdgeDistance = 20.0
 
 type Path struct {
 	Nodes                    []*Node
@@ -49,15 +49,19 @@ func (p *Path) Iterate(tree *rtreego.Rtree) {
 		node.Iterate()
 	}
 
+	p.splitEdges()
+	p.pruneNodes()
+
 	if p.iterationsSinceInjection >= p.NodeInjectionInterval {
 		p.injectNode()
+		p.iterationsSinceInjection = 0
 	}
 	p.iterationsSinceInjection++
 }
 
 func (p *Path) applyBrownianMotion(node *Node) {
-	node.X += rand.Float64()
-	node.Y += rand.Float64()
+	node.nextX += -0.5 + rand.Float64()
+	node.nextY += -0.5 + rand.Float64()
 }
 
 func (p *Path) applyAttraction(node *Node) {
@@ -103,7 +107,7 @@ func (p *Path) splitEdges() {
 	newNodes := make([]*Node, 0, len(p.Nodes))
 	for _, node := range p.Nodes {
 		prevNode, _ := p.connectedNodes(node)
-		if prevNode != nil && prevNode.Dist(node) < maxEdgeDistance {
+		if prevNode != nil && prevNode.Dist(node) >= maxEdgeDistance {
 			midpointX, midpointY := node.MidpointTo(prevNode)
 			midpointNode := NewNode(midpointX, midpointY)
 			newNodes = append(newNodes, midpointNode)
@@ -114,14 +118,14 @@ func (p *Path) splitEdges() {
 }
 
 func (p *Path) pruneNodes() {
-	newNodes := make([]*Node, 0, len(p.Nodes))
-	for _, node := range p.Nodes {
+	for idx := 0; idx < len(p.Nodes); idx++ {
+		node := p.Nodes[idx]
 		prevNode, _ := p.connectedNodes(node)
-		if node.IsFixed || prevNode == nil || node.Dist(prevNode) >= minEdgeDistance {
-			newNodes = append(newNodes, node)
+		if prevNode != nil && node.Dist(prevNode) < minEdgeDistance {
+			p.Nodes = append(p.Nodes[:idx], p.Nodes[idx+1:]...)
+			idx--
 		}
 	}
-	p.Nodes = newNodes
 }
 
 func (p *Path) injectNode() {

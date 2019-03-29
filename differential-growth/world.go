@@ -31,6 +31,7 @@ func (w *World) buildTree() {
 }
 
 func (w *World) Iterate() {
+	w.buildTree()
 	for _, path := range w.paths {
 		path.Iterate(w.tree)
 	}
@@ -38,8 +39,14 @@ func (w *World) Iterate() {
 
 func (w *World) Draw(dc *gg.Context) {
 	for _, path := range w.paths {
-		for _, node := range path.Nodes {
+		for nIdx, node := range path.Nodes {
 			node.Draw(dc)
+
+			if nIdx > 0 {
+				prevNode := path.Nodes[nIdx-1]
+				dc.DrawLine(prevNode.X, prevNode.Y, node.X, node.Y)
+			}
+			dc.Stroke()
 		}
 	}
 }
