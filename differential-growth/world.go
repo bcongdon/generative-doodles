@@ -6,14 +6,16 @@ import (
 )
 
 type World struct {
-	tree  *rtreego.Rtree
-	paths []*Path
+	tree   *rtreego.Rtree
+	paths  []*Path
+	bounds Bounds
 }
 
-func NewWorld() *World {
+func NewWorld(width, height float64) *World {
 	world := &World{
-		tree:  rtreego.NewTree(2, 25, 50),
-		paths: []*Path{},
+		tree:   rtreego.NewTree(2, 25, 50),
+		paths:  []*Path{},
+		bounds: NewBounds(0, 0, width, height),
 	}
 	return world
 }
@@ -33,7 +35,7 @@ func (w *World) buildTree() {
 func (w *World) Iterate() {
 	w.buildTree()
 	for _, path := range w.paths {
-		path.Iterate(w.tree)
+		path.Iterate(w.bounds, w.tree)
 	}
 }
 

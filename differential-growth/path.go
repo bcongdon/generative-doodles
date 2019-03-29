@@ -13,14 +13,6 @@ const (
 	CurvatureInjection
 )
 
-const minAttractionDistance = 10.0
-const attractionForce = 0.001
-const repulsionForce = 0.8
-const repulsionRadius = 20.0
-const alignmentForce = 0.001
-const maxEdgeDistance = 30.0
-const minEdgeDistance = 20.0
-
 type Path struct {
 	Nodes                    []*Node
 	UseBrownianMotion        bool
@@ -36,7 +28,7 @@ func NewPath(nodes []*Node) *Path {
 	}
 }
 
-func (p *Path) Iterate(tree *rtreego.Rtree) {
+func (p *Path) Iterate(worldBounds Bounds, tree *rtreego.Rtree) {
 	for _, node := range p.Nodes {
 		if p.UseBrownianMotion {
 			p.applyBrownianMotion(node)
@@ -45,8 +37,11 @@ func (p *Path) Iterate(tree *rtreego.Rtree) {
 		p.applyAttraction(node)
 		p.applyRepulsion(node, tree)
 		p.applyAlignment(node)
+	}
 
+	for _, node := range p.Nodes {
 		node.Iterate()
+		p.applyBounds(node, worldBounds)
 	}
 
 	p.splitEdges()
@@ -60,8 +55,8 @@ func (p *Path) Iterate(tree *rtreego.Rtree) {
 }
 
 func (p *Path) applyBrownianMotion(node *Node) {
-	node.nextX += -0.5 + rand.Float64()
-	node.nextY += -0.5 + rand.Float64()
+	node.nextX += (-brownianMotionAmount / 2) + brownianMotionAmount*rand.Float64()
+	node.nextY += (-brownianMotionAmount / 2) + brownianMotionAmount*rand.Float64()
 }
 
 func (p *Path) applyAttraction(node *Node) {
@@ -75,20 +70,24 @@ func (p *Path) applyAttraction(node *Node) {
 			continue
 		}
 		dist := node.Dist(connectedNode)
-		if dist >= minAttractionDistance {
-			node.nextX = Lerp(node.nextX, connectedNode.nextX, attractionForce)
-			node.nextY = Lerp(node.nextY, connectedNode.nextY, attractionForce)
+		if dist >= minEdgeDistance {
+			node.nextX = Lerp(node.nextX, connectedNode.X, attractionForce)
+			node.nextY = Lerp(node.nextY, connectedNode.Y, attractionForce)
 		}
 	}
 }
 
 func (p *Path) applyRepulsion(node *Node, tree *rtreego.Rtree) {
-	neighbors := tree.NearestNeighbors(100, rtreego.Point{node.X, node.Y}, MakeRadiusFilter(node, repulsionRadius))
+	// neighbors := tree.NearestNeighbors(100, rtreego.Point{node.X, node.Y})
 
-	for _, treeNode := range neighbors {
-		neighborNode := treeNode.(*Node)
-		node.nextX = Lerp(node.nextX, neighborNode.nextX, -repulsionForce)
-		node.nextY = Lerp(node.nextY, neighborNode.nextY, -repulsionForce)
+	for _, treeNode := range p.Nodes {
+		neighborNode := treeNode
+		dist := node.Dist(neighborNode)
+		if neighborNode == node || dist > repulsionRadius {
+			continue
+		}
+		node.nextX = Lerp(node.nextX, neighborNode.X, -repulsionForce/(0.1*dist))
+		node.nextY = Lerp(node.nextY, neighborNode.Y, -repulsionForce/(0.1*dist))
 	}
 }
 
@@ -118,13 +117,25 @@ func (p *Path) splitEdges() {
 }
 
 func (p *Path) pruneNodes() {
+	if len(p.Nodes) <= 2 {
+		return
+	}
 	for idx := 0; idx < len(p.Nodes); idx++ {
 		node := p.Nodes[idx]
+		if node.IsFixed {
+			continue
+		}
 		prevNode, _ := p.connectedNodes(node)
 		if prevNode != nil && node.Dist(prevNode) < minEdgeDistance {
 			p.Nodes = append(p.Nodes[:idx], p.Nodes[idx+1:]...)
 			idx--
 		}
+	}
+}
+
+func (p *Path) applyBounds(node *Node, worldBounds Bounds) {
+	if !worldBounds.Contains(node.X, node.Y) {
+		node.IsFixed = true
 	}
 }
 
