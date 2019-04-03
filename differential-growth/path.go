@@ -29,19 +29,17 @@ func NewPath(nodes []*Node) *Path {
 }
 
 func (p *Path) Iterate(worldBounds Bounds, tree *rtreego.Rtree) {
-	for _, node := range p.Nodes {
+	for nodeIdx, node := range p.Nodes {
 		if p.UseBrownianMotion {
 			p.applyBrownianMotion(node)
 		}
 
-		p.applyAttraction(node)
+		p.applyAttraction(nodeIdx)
 		p.applyRepulsion(node, tree)
-		p.applyAlignment(node)
-	}
+		p.applyAlignment(nodeIdx)
 
-	for _, node := range p.Nodes {
-		node.Iterate()
 		p.applyBounds(node, worldBounds)
+		node.Iterate()
 	}
 
 	p.splitEdges()
@@ -55,16 +53,17 @@ func (p *Path) Iterate(worldBounds Bounds, tree *rtreego.Rtree) {
 }
 
 func (p *Path) applyBrownianMotion(node *Node) {
-	node.nextX += (-brownianMotionAmount / 2) + brownianMotionAmount*rand.Float64()
-	node.nextY += (-brownianMotionAmount / 2) + brownianMotionAmount*rand.Float64()
+	node.X += (-brownianMotionAmount / 2) + brownianMotionAmount*rand.Float64()
+	node.Y += (-brownianMotionAmount / 2) + brownianMotionAmount*rand.Float64()
 }
 
-func (p *Path) applyAttraction(node *Node) {
+func (p *Path) applyAttraction(nodeIdx int) {
+	node := p.Nodes[nodeIdx]
 	if node.IsFixed {
 		return
 	}
 
-	prevNode, nextNode := p.connectedNodes(node)
+	prevNode, nextNode := p.connectedNodes(nodeIdx)
 	for _, connectedNode := range []*Node{prevNode, nextNode} {
 		if connectedNode == nil {
 			continue
@@ -78,22 +77,22 @@ func (p *Path) applyAttraction(node *Node) {
 }
 
 func (p *Path) applyRepulsion(node *Node, tree *rtreego.Rtree) {
-	// neighbors := tree.NearestNeighbors(100, rtreego.Point{node.X, node.Y})
+	neighbors := tree.NearestNeighbors(10, rtreego.Point{node.X, node.Y})
 
-	for _, treeNode := range p.Nodes {
-		neighborNode := treeNode
+	for _, treeNode := range neighbors {
+		neighborNode := treeNode.(*Node)
 		dist := node.Dist(neighborNode)
 		if neighborNode == node || dist > repulsionRadius {
 			continue
 		}
-		node.nextX = Lerp(node.nextX, neighborNode.X, -repulsionForce/(0.1*dist))
-		node.nextY = Lerp(node.nextY, neighborNode.Y, -repulsionForce/(0.1*dist))
+		node.nextX = Lerp(node.X, neighborNode.X, -repulsionForce)
+		node.nextY = Lerp(node.Y, neighborNode.Y, -repulsionForce)
 	}
 }
 
-// TODO
-func (p *Path) applyAlignment(node *Node) {
-	prevNode, nextNode := p.connectedNodes(node)
+func (p *Path) applyAlignment(nodeIdx int) {
+	node := p.Nodes[nodeIdx]
+	prevNode, nextNode := p.connectedNodes(nodeIdx)
 	if prevNode != nil && nextNode != nil && !node.IsFixed {
 		midpointX, midpointY := prevNode.MidpointTo(nextNode)
 
@@ -104,9 +103,9 @@ func (p *Path) applyAlignment(node *Node) {
 
 func (p *Path) splitEdges() {
 	newNodes := make([]*Node, 0, len(p.Nodes))
-	for _, node := range p.Nodes {
-		prevNode, _ := p.connectedNodes(node)
-		if prevNode != nil && prevNode.Dist(node) >= maxEdgeDistance {
+	for nodeIdx, node := range p.Nodes {
+		prevNode, _ := p.connectedNodes(nodeIdx)
+		if prevNode != nil && prevNode.Dist(node) > maxEdgeDistance {
 			midpointX, midpointY := node.MidpointTo(prevNode)
 			midpointNode := NewNode(midpointX, midpointY)
 			newNodes = append(newNodes, midpointNode)
@@ -125,7 +124,7 @@ func (p *Path) pruneNodes() {
 		if node.IsFixed {
 			continue
 		}
-		prevNode, _ := p.connectedNodes(node)
+		prevNode, _ := p.connectedNodes(idx)
 		if prevNode != nil && node.Dist(prevNode) < minEdgeDistance {
 			p.Nodes = append(p.Nodes[:idx], p.Nodes[idx+1:]...)
 			idx--
@@ -152,9 +151,9 @@ func (p *Path) injectNode() {
 
 func (p *Path) injectRandomNode() {
 	index := 1 + rand.Intn(len(p.Nodes)-1)
-	injectionNode := p.Nodes[index]
-	prevNode, nextNode := p.connectedNodes(injectionNode)
+	prevNode, nextNode := p.connectedNodes(index)
 
+	injectionNode := p.Nodes[index]
 	if prevNode != nil && nextNode != nil && injectionNode.Dist(prevNode) > minEdgeDistance {
 		midpointX, midpointY := injectionNode.MidpointTo(prevNode)
 		midpointNode := NewNode(midpointX, midpointY)
@@ -166,19 +165,8 @@ func (p *Path) injectByCurvature() {
 	panic("Unimplemented injection mode")
 }
 
-func (p *Path) connectedNodes(node *Node) (prevNode, nextNode *Node) {
+func (p *Path) connectedNodes(nodeIdx int) (prevNode, nextNode *Node) {
 	if len(p.Nodes) <= 1 {
-		return
-	}
-
-	nodeIdx := -1
-	for idx, n := range p.Nodes {
-		if n == node {
-			nodeIdx = idx
-			break
-		}
-	}
-	if nodeIdx == -1 {
 		return
 	}
 

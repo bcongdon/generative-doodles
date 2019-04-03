@@ -30,8 +30,10 @@ func (n *Node) Iterate() {
 		return
 	}
 
-	n.X += ClampAbs(n.nextX-n.X, maxVelocity) / 2
-	n.Y += ClampAbs(n.nextY-n.Y, maxVelocity) / 2
+	n.X = Lerp(n.X, n.nextX, maxVelocity)
+	n.Y = Lerp(n.Y, n.nextY, maxVelocity)
+	// n.nextX = n.X
+	// n.nextY = n.Y
 }
 
 func (n *Node) Draw(dc *gg.Context) {
