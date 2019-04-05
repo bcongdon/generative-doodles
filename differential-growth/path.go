@@ -2,8 +2,10 @@ package main
 
 import (
 	"math/rand"
+	"sync"
 
-	"github.com/dhconnelly/rtreego"
+	"github.com/kyroy/kdtree"
+	"github.com/panjf2000/ants"
 )
 
 type InjectionMode int
@@ -28,8 +30,18 @@ func NewPath(nodes []*Node) *Path {
 	}
 }
 
-func (p *Path) Iterate(worldBounds Bounds, tree *rtreego.Rtree) {
-	for nodeIdx, node := range p.Nodes {
+type nodeRecord struct {
+	idx  int
+	node *Node
+}
+
+func (p *Path) Iterate(worldBounds Bounds, tree *kdtree.KDTree) {
+	var wg sync.WaitGroup
+
+	pool, _ := ants.NewPoolWithFunc(100, func(i interface{}) {
+		record := i.(nodeRecord)
+		node, nodeIdx := record.node, record.idx
+
 		if p.UseBrownianMotion {
 			p.applyBrownianMotion(node)
 		}
@@ -40,7 +52,16 @@ func (p *Path) Iterate(worldBounds Bounds, tree *rtreego.Rtree) {
 
 		p.applyBounds(node, worldBounds)
 		node.Iterate()
+
+		wg.Done()
+	})
+	defer pool.Release()
+
+	for nodeIdx, node := range p.Nodes {
+		wg.Add(1)
+		pool.Invoke(nodeRecord{nodeIdx, node})
 	}
+	wg.Wait()
 
 	p.splitEdges()
 	p.pruneNodes()
@@ -76,8 +97,8 @@ func (p *Path) applyAttraction(nodeIdx int) {
 	}
 }
 
-func (p *Path) applyRepulsion(node *Node, tree *rtreego.Rtree) {
-	neighbors := tree.NearestNeighbors(10, rtreego.Point{node.X, node.Y})
+func (p *Path) applyRepulsion(node *Node, tree *kdtree.KDTree) {
+	neighbors := tree.KNN(node, 10)
 
 	for _, treeNode := range neighbors {
 		neighborNode := treeNode.(*Node)

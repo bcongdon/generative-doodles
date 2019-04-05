@@ -56,3 +56,16 @@ func (n *Node) Bounds() *rtreego.Rect {
 	point := rtreego.Point{n.X, n.Y}
 	return point.ToRect(0.001)
 }
+
+func (n *Node) Dimensions() int {
+	return 2
+}
+
+func (n *Node) Dimension(i int) float64 {
+	if i == 0 {
+		return n.X
+	} else if i == 1 {
+		return n.Y
+	}
+	panic("Unknown dimension")
+}

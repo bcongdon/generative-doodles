@@ -1,19 +1,18 @@
 package main
 
 import (
-	"github.com/dhconnelly/rtreego"
 	"github.com/fogleman/gg"
+	"github.com/kyroy/kdtree"
 )
 
 type World struct {
-	tree   *rtreego.Rtree
+	tree   *kdtree.KDTree
 	paths  []*Path
 	bounds Bounds
 }
 
 func NewWorld(width, height float64) *World {
 	world := &World{
-		tree:   rtreego.NewTree(2, 25, 50),
 		paths:  []*Path{},
 		bounds: NewBounds(0, 0, width, height),
 	}
@@ -21,7 +20,7 @@ func NewWorld(width, height float64) *World {
 }
 
 func (w *World) buildTree() {
-	nodes := make([]rtreego.Spatial, 0, 1000)
+	nodes := make([]kdtree.Point, 0, 1000)
 
 	for _, path := range w.paths {
 		for _, node := range path.Nodes {
@@ -29,7 +28,8 @@ func (w *World) buildTree() {
 		}
 	}
 
-	w.tree = rtreego.NewTree(2, 25, 50, nodes...)
+	// w.tree = rtreego.NewTree(2, 25, 50, nodes...)
+	w.tree = kdtree.New(nodes)
 }
 
 func (w *World) Iterate() {

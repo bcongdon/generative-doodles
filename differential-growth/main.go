@@ -53,7 +53,7 @@ func main() {
 		dc.Clear()
 		dc.SetRGB(0, 0, 0)
 
-		if i%10 == 0 {
+		if i%100 == 0 {
 			world.Draw(dc)
 			dc.Stroke()
 			dc.SavePNG(fmt.Sprintf("%s/%d.png", dirName, i))
