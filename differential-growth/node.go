@@ -3,7 +3,6 @@ package main
 import (
 	"math"
 
-	"github.com/dhconnelly/rtreego"
 	"github.com/fogleman/gg"
 )
 
@@ -50,11 +49,6 @@ func (n *Node) MidpointTo(other *Node) (x, y float64) {
 	x = (n.X + other.X) / 2
 	y = (n.Y + other.Y) / 2
 	return
-}
-
-func (n *Node) Bounds() *rtreego.Rect {
-	point := rtreego.Point{n.X, n.Y}
-	return point.ToRect(0.001)
 }
 
 func (n *Node) Dimensions() int {
