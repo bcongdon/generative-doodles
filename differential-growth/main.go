@@ -1,17 +1,31 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"math"
 	"os"
+	"runtime/pprof"
 
 	"github.com/bcongdon/fn"
 	"github.com/fogleman/gg"
 )
 
 var namer = fn.New()
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	width, height := 1000.0, 1000.0
 	world := NewWorld(width, height)
 
@@ -31,7 +45,7 @@ func main() {
 	dirName := namer.Name()
 	os.Mkdir(dirName, os.ModePerm)
 
-	for i := 0; i < 750; i++ {
+	for i := 0; i < 5000; i++ {
 		fmt.Println(i, len(path.Nodes))
 
 		dc := gg.NewContext(int(width), int(height))
@@ -49,7 +63,7 @@ func main() {
 		for _, p := range path.Nodes {
 			x := p.X - 500
 			y := p.Y - 500
-			if (x*x)+(y*y) > 1000*1000 {
+			if (x*x)+(y*y) > 500*500 {
 				p.IsFixed = true
 			}
 		}
